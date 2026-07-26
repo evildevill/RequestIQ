@@ -190,7 +190,7 @@ async function attachToTab(tabId) {
       maxTotalBufferSize: 10485760,
     });
     attachedTabs.set(tabId, true);
-    console.log(`[Network Inspector] Attached to tab ${tabId}`);
+    console.log(`[RequestIQ] Attached to tab ${tabId}`);
     pushUpdate({ tabId, status: 'attached', attachedTabs: attachedTabs.size }, 'status:changed');
   } catch (err) {
     if (err.message?.includes('Another debugger')) {
@@ -341,7 +341,7 @@ function handleDebuggerDetach(source, reason) {
   const tabId = source.tabId;
   if (attachedTabs.has(tabId)) {
     attachedTabs.delete(tabId);
-    console.log(`[Network Inspector] Detached from tab ${tabId}: ${reason}`);
+    console.log(`[RequestIQ] Detached from tab ${tabId}: ${reason}`);
     pushUpdate({ tabId, reason, status: 'detached', attachedTabs: attachedTabs.size }, 'status:changed');
     if (reason !== 'target_closed') {
       setTimeout(() => attachToTab(tabId), 1000);

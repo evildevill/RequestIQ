@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Network Inspector</title>
+  <title>RequestIQ – Network & API Inspector</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div id="app">
     <header>
       <div class="logo">
-        <svg width="20" height="20" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="#1a2332"/><g stroke="#58a6ff" stroke-width="6" fill="none" stroke-linecap="round"><path d="M24 40 L64 24 L104 40"/><path d="M24 64 L64 48 L104 64"/><path d="M24 88 L64 72 L104 88"/><circle cx="64" cy="24" r="8" fill="#58a6ff"/><circle cx="64" cy="48" r="8" fill="#58a6ff"/><circle cx="64" cy="72" r="8" fill="#58a6ff"/></g></svg>
-        Network Inspector
+        <img id="popupLogo" class="popup-logo" alt="RequestIQ">
+        <span class="logo-text">RequestIQ</span>
       </div>
     </header>
 
@@ -50,6 +50,8 @@
     <div class="actions">
       <button id="settingsBtn" class="btn btn-ghost">Settings</button>
     </div>
+
+    <div class="tagline">Network & API Inspector</div>
   </div>
 
   <script type="module" src="popup.js"></script>

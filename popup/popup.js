@@ -52,6 +52,7 @@ $('#clearBtn').addEventListener('click', async () => {
 });
 
 function init() {
+  document.getElementById('popupLogo').src = chrome.runtime.getURL('images/icon32.png');
   port = connectToBackground('popup');
 
   onMessage('status:changed', (data) => {

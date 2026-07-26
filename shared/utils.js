@@ -242,7 +242,7 @@ export function exportHAR(requests) {
   const har = {
     log: {
       version: '1.2',
-      creator: { name: 'Network Inspector', version: '1.0.0' },
+      creator: { name: 'RequestIQ', version: '1.0.0' },
       entries: requests.map(r => ({
         startedDateTime: new Date(r.timestamp).toISOString(),
         time: r.duration || 0,

@@ -410,6 +410,8 @@ function init() {
     }
   });
 
+  document.getElementById('appLogo').src = chrome.runtime.getURL('images/icon32.png');
+
   loadSettings();
 
   sendMessage('get:requests').then(requests => {

@@ -1,4 +1,4 @@
-# Network Inspector
+# RequestIQ – Network & API Inspector
 
 A production-grade Chrome extension for inspecting every network request made by your browser tab. Built with Manifest V3 and modern Chrome APIs.
 

@@ -69,7 +69,37 @@ input, select, button { font-family: inherit; font-size: inherit; }
   gap: 8px;
 }
 
-.title { font-weight: 600; font-size: 13px; }
+.app-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.2;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #58a6ff, #3fb950);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
 
 .toolbar-right { display: flex; gap: 4px; }
 
