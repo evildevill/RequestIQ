@@ -7,14 +7,14 @@ A production-grade Chrome extension for inspecting every network request made by
 1. Open Chrome/Edge/Brave and navigate to `chrome://extensions`
 2. Enable **Developer mode** (toggle in top-right)
 3. Click **Load unpacked**
-4. Select the `network-inspector/` directory
+4. Select the `RequestIQ/` directory
 
 The extension icon will appear in the toolbar. Click it to open the side panel.
 
 ## Project Structure
 
 ```
-network-inspector/
+RequestIQ/
 ├── manifest.json              # Extension manifest (MV3)
 ├── images/
 │   └── icon.svg               # Application icon
