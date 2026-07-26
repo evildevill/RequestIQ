@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Network Inspector",
+  "version": "1.0.0",
+  "description": "Inspect every network request from your browser tab. A powerful debugging, security auditing, and development tool.",
+  "minimum_chrome_version": "102",
+  "permissions": [
+    "debugger",
+    "storage",
+    "sidePanel",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Network Inspector",
+    "default_icon": {
+      "16": "images/icon.svg",
+      "48": "images/icon.svg",
+      "128": "images/icon.svg"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "ISOLATED"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/injected.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "images/icon.svg",
+    "48": "images/icon.svg",
+    "128": "images/icon.svg"
+  }
+}

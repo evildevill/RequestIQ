@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Inspector</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div id="app">
+    <header class="toolbar">
+      <div class="toolbar-left">
+        <svg width="18" height="18" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="#1a2332"/><g stroke="#58a6ff" stroke-width="6" fill="none" stroke-linecap="round"><path d="M24 40 L64 24 L104 40"/><path d="M24 64 L64 48 L104 64"/><path d="M24 88 L64 72 L104 88"/><circle cx="64" cy="24" r="8" fill="#58a6ff"/><circle cx="64" cy="48" r="8" fill="#58a6ff"/><circle cx="64" cy="72" r="8" fill="#58a6ff"/></g></svg>
+        <span class="title">Network Inspector</span>
+      </div>
+      <div class="toolbar-right">
+        <button id="statsToggle" class="icon-btn" title="Statistics">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M0 16V0h2v14h14v2H0z" fill="currentColor"/><path d="M4 12V6h2v6H4zm4 0V2h2v10H8zm4 0V8h2v4h-2z" fill="currentColor"/></svg>
+        </button>
+        <button id="settingsToggle" class="icon-btn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 0a8 8 0 100 16A8 8 0 008 0z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="controls-bar">
+      <div class="controls-left">
+        <button id="pauseBtn" class="control-btn" title="Pause/Resume">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1" width="3" height="12" rx="1"/><rect x="9" y="1" width="3" height="12" rx="1"/></svg>
+        </button>
+        <button id="clearBtn" class="control-btn" title="Clear">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h10M5 3V2a1 1 0 011-1h2a1 1 0 011 1v1M3 3v9a1 1 0 001 1h6a1 1 0 001-1V3"/></svg>
+        </button>
+        <span class="request-count" id="requestCount">0</span>
+      </div>
+      <div class="controls-right">
+        <div class="search-box">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="4"/><path d="M8 8l3 3"/></svg>
+          <input type="text" id="searchInput" placeholder="Filter requests..." spellcheck="false">
+        </div>
+        <button id="exportBtn" class="control-btn" title="Export">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M2 10v2h10v-2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-bar" id="filterBar">
+      <select id="methodFilter" class="filter-select">
+        <option value="">All Methods</option>
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+        <option value="PUT">PUT</option>
+        <option value="PATCH">PATCH</option>
+        <option value="DELETE">DELETE</option>
+        <option value="HEAD">HEAD</option>
+        <option value="OPTIONS">OPTIONS</option>
+        <option value="WS">WS</option>
+      </select>
+      <select id="typeFilter" class="filter-select">
+        <option value="">All Types</option>
+        <option value="document">Document</option>
+        <option value="stylesheet">Stylesheet</option>
+        <option value="image">Image</option>
+        <option value="script">Script</option>
+        <option value="fetch">Fetch</option>
+        <option value="xhr">XHR</option>
+        <option value="font">Font</option>
+        <option value="websocket">WebSocket</option>
+        <option value="eventsource">EventSource</option>
+        <option value="beacon">Beacon</option>
+        <option value="media">Media</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="statusFilter" class="filter-select">
+        <option value="">All Status</option>
+        <option value="2xx">2xx Success</option>
+        <option value="3xx">3xx Redirect</option>
+        <option value="4xx">4xx Client Error</option>
+        <option value="5xx">5xx Server Error</option>
+      </select>
+      <button id="securityFilterBtn" class="filter-btn" title="Show only security alerts">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L1 3v2c0 3.3 2.2 6.4 5 7 2.8-.6 5-3.7 5-7V3L6 1z" stroke="#f85149" stroke-width="1.5" fill="none"/><path d="M6 4v2M6 8h0" stroke="#f85149" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Alerts
+      </button>
+    </div>
+
+    <div id="statsPanel" class="stats-panel hidden">
+      <div class="stats-grid">
+        <div class="stat"><span class="stat-val" id="statTotal">0</span><span class="stat-lbl">Total</span></div>
+        <div class="stat"><span class="stat-val" id="statDomains">0</span><span class="stat-lbl">Domains</span></div>
+        <div class="stat"><span class="stat-val" id="statGet">0</span><span class="stat-lbl">GET</span></div>
+        <div class="stat"><span class="stat-val" id="statPost">0</span><span class="stat-lbl">POST</span></div>
+        <div class="stat"><span class="stat-val" id="statFailed">0</span><span class="stat-lbl">Failed</span></div>
+        <div class="stat"><span class="stat-val" id="statAvgTime">0ms</span><span class="stat-lbl">Avg Time</span></div>
+        <div class="stat"><span class="stat-val" id="statLargest">-</span><span class="stat-lbl">Largest</span></div>
+        <div class="stat"><span class="stat-val" id="statTopDomain">-</span><span class="stat-lbl">Top Domain</span></div>
+      </div>
+    </div>
+
+    <div id="settingsPanel" class="settings-panel hidden">
+      <div class="settings-group">
+        <label class="setting-row">
+          <span>Max History</span>
+          <select id="maxHistory">
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000" selected>1,000</option>
+            <option value="5000">5,000</option>
+            <option value="100000">Unlimited</option>
+          </select>
+        </label>
+        <label class="setting-row">
+          <span>Theme</span>
+          <select id="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </label>
+        <label class="setting-row">
+          <span>Ignored Domains</span>
+          <input type="text" id="ignoredDomains" placeholder="e.g., google.com, facebook.com">
+        </label>
+      </div>
+    </div>
+
+    <div id="listContainer" class="list-container">
+      <div id="virtualList" class="virtual-list"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h36v28H6z"/><path d="M14 12V8h20v4"/><path d="M16 22h16M16 28h12M16 34h8"/></svg>
+        <p>No requests captured yet</p>
+        <span>Visit a webpage to start monitoring</span>
+      </div>
+    </div>
+
+    <div id="detailPanel" class="detail-panel hidden">
+      <div class="detail-header">
+        <button id="detailClose" class="icon-btn">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l10 10M12 2L2 12"/></svg>
+        </button>
+        <span class="detail-title">Request Details</span>
+      </div>
+      <div class="detail-content" id="detailContent"></div>
+    </div>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Inspector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="#1a2332"/><g stroke="#58a6ff" stroke-width="6" fill="none" stroke-linecap="round"><path d="M24 40 L64 24 L104 40"/><path d="M24 64 L64 48 L104 64"/><path d="M24 88 L64 72 L104 88"/><circle cx="64" cy="24" r="8" fill="#58a6ff"/><circle cx="64" cy="48" r="8" fill="#58a6ff"/><circle cx="64" cy="72" r="8" fill="#58a6ff"/></g></svg>
+        Network Inspector
+      </div>
+    </header>
+
+    <div id="status-bar">
+      <div class="status-indicator" id="statusIndicator"></div>
+      <span id="statusText">Checking...</span>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-value" id="totalRequests">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="uniqueDomains">0</div>
+        <div class="stat-label">Domains</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="failedRequests">0</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="activeRequests">0</div>
+        <div class="stat-label">Active</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="openSidePanel" class="btn btn-primary" title="Open side panel">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 2v12" stroke="currentColor" stroke-width="1.5"/></svg>
+        Open Panel
+      </button>
+      <button id="clearBtn" class="btn btn-secondary" title="Clear all requests">Clear</button>
+    </div>
+
+    <div class="actions">
+      <button id="settingsBtn" class="btn btn-ghost">Settings</button>
+    </div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
