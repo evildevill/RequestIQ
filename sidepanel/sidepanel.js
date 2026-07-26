@@ -7,6 +7,7 @@ import {
 import {
   methodColor, statusColor, formatTime, getHostname, getPath,
   computeStats, exportJSON, exportCSV, exportHAR,
+  exportMarkdown, exportTXT, formatBytes,
 } from '../shared/utils.js';
 
 const ROW_HEIGHT = 36;
@@ -235,12 +236,6 @@ function showDetails(request) {
   `;
 }
 
-function formatBytes(bytes) {
-  if (bytes < 1024) return bytes + 'B';
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
-  return (bytes / 1048576).toFixed(1) + 'MB';
-}
-
 function escapeHtml(str) {
   if (!str) return '';
   const d = document.createElement('div');
@@ -263,14 +258,45 @@ function handleRowClick(e) {
 }
 
 async function handleExport() {
-  const { data, ext, mime } = await sendMessage('export:requests', { format: 'json' });
-  const blob = new Blob([data], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `network-export-${Date.now()}.${ext}`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const format = $('#exportFormat').value;
+  try {
+    const requests = await sendMessage('get:requests');
+    if (!requests || !requests.length) {
+      console.warn('[Export] No requests to export');
+      return;
+    }
+    let data, ext, mime;
+    switch (format) {
+      case 'csv':
+        data = exportCSV(requests); ext = 'csv'; mime = 'text/csv';
+        break;
+      case 'har':
+        data = exportHAR(requests); ext = 'har'; mime = 'application/json';
+        break;
+      case 'md':
+        data = exportMarkdown(requests); ext = 'md'; mime = 'text/markdown';
+        break;
+      case 'txt':
+        data = exportTXT(requests); ext = 'txt'; mime = 'text/plain';
+        break;
+      default:
+        data = exportJSON(requests); ext = 'json'; mime = 'application/json';
+    }
+    const blob = new Blob([data], { type: mime + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `network-inspector-${Date.now()}.${ext}`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  } catch (err) {
+    console.error('[Export] Failed:', err);
+  }
 }
 
 async function loadSettings() {

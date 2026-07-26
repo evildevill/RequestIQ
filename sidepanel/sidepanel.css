@@ -124,6 +124,27 @@ input, select, button { font-family: inherit; font-size: inherit; }
 .control-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .control-btn.active { color: var(--accent); background: var(--accent-dim); }
 
+.export-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.export-select {
+  padding: 2px 4px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  outline: none;
+  width: 56px;
+  height: 22px;
+}
+
+.export-select:hover { border-color: var(--text-muted); }
+
 .request-count {
   font-size: 11px;
   color: var(--text-muted);

@@ -38,9 +38,18 @@
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="4"/><path d="M8 8l3 3"/></svg>
           <input type="text" id="searchInput" placeholder="Filter requests..." spellcheck="false">
         </div>
-        <button id="exportBtn" class="control-btn" title="Export">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M2 10v2h10v-2"/></svg>
-        </button>
+        <div class="export-group">
+          <select id="exportFormat" class="export-select" title="Export format">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+            <option value="har">HAR</option>
+            <option value="md">Markdown</option>
+            <option value="txt">Plain Text</option>
+          </select>
+          <button id="exportBtn" class="control-btn" title="Export">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v8M4 6l3 3 3-3M2 10v2h10v-2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 

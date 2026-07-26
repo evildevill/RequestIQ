@@ -278,6 +278,88 @@ export function exportHAR(requests) {
   return JSON.stringify(har, null, 2);
 }
 
+export function exportMarkdown(requests) {
+  if (!requests.length) return '# Network Inspector Export\n\nNo requests captured.';
+  const lines = [
+    '# Network Inspector Export',
+    '',
+    `**Generated:** ${new Date().toISOString()}`,
+    `**Total Requests:** ${requests.length}`,
+    '',
+    '## Requests',
+    '',
+    '| Method | URL | Status | Type | Duration | Size |',
+    '|--------|-----|--------|------|----------|------|',
+  ];
+  for (const r of requests) {
+    const url = r.url || '';
+    const method = r.method || 'GET';
+    const status = r.status || '-';
+    const type = r.type || 'unknown';
+    const duration = r.duration > 0 ? `${r.duration.toFixed(0)}ms` : '-';
+    const size = r.size > 0 ? formatBytes(r.size) : '-';
+    lines.push(`| ${method} | ${url.replace(/\|/g, '\\|')} | ${status} | ${type} | ${duration} | ${size} |`);
+  }
+  lines.push('');
+  lines.push('## Summary');
+  const stats = computeStats(requests);
+  lines.push(`- **Total:** ${stats.total}`);
+  lines.push(`- **Unique Domains:** ${stats.uniqueDomains}`);
+  lines.push(`- **GET:** ${stats.getCount}, **POST:** ${stats.postCount}`);
+  lines.push(`- **Failed:** ${stats.failed}`);
+  lines.push(`- **Avg Time:** ${stats.avgTime.toFixed(1)}ms`);
+  lines.push(`- **Top Domain:** ${stats.mostRequestedDomain || '-'}`);
+
+  const alerts = requests.filter(r => r.security);
+  if (alerts.length) {
+    lines.push('');
+    lines.push('## Security Alerts');
+    for (const r of alerts) {
+      for (const a of r.security) {
+        lines.push(`- [${a.severity.toUpperCase()}] ${a.type}: ${a.detail}`);
+      }
+    }
+  }
+
+  return lines.join('\n');
+}
+
+export function exportTXT(requests) {
+  if (!requests.length) return 'Network Inspector Export - No requests captured.\n';
+  const lines = [
+    '═══════════════════════════════════════════',
+    '  NETWORK INSPECTOR - REQUEST LOG',
+    '═══════════════════════════════════════════',
+    `  Generated: ${new Date().toISOString()}`,
+    `  Total: ${requests.length} requests`,
+    '───────────────────────────────────────────',
+    '',
+  ];
+  for (const r of requests) {
+    lines.push(`  ${r.method || 'GET'} ${r.status || '???'}  ${r.url || ''}`);
+    if (r.duration > 0 || r.size > 0) {
+      const parts = [];
+      if (r.duration > 0) parts.push(`${r.duration.toFixed(0)}ms`);
+      if (r.size > 0) parts.push(formatBytes(r.size));
+      lines.push(`               └─ ${parts.join(', ')}`);
+    }
+    lines.push('');
+  }
+  lines.push('───────────────────────────────────────────');
+  const stats = computeStats(requests);
+  lines.push(`  ${stats.total} total, ${stats.uniqueDomains} domains`);
+  lines.push(`  ${stats.getCount} GET, ${stats.postCount} POST, ${stats.failed} failed`);
+  lines.push('═══════════════════════════════════════════');
+  return lines.join('\n');
+}
+
+export function formatBytes(bytes) {
+  if (!bytes || bytes < 0) return '0B';
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+  return (bytes / 1048576).toFixed(1) + 'MB';
+}
+
 export function truncate(str, len = 50) {
   if (!str) return '';
   return str.length > len ? str.slice(0, len) + '…' : str;
