@@ -1,6 +1,27 @@
 # RequestIQ – Network & API Inspector
 
-A production-grade Chrome extension for inspecting every network request made by your browser tab. Built with Manifest V3 and modern Chrome APIs.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.0.0-8b5cf6.svg" alt="Version 1.0.0"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Manifest-V3-ff6b6b.svg" alt="Manifest V3"></a>
+  <a href="#"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Chrome-102%2B-4285F4.svg" alt="Chrome 102+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Edge-102%2B-0078D7.svg" alt="Edge 102+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Brave-supported-f5426c.svg" alt="Brave"></a>
+  <a href="#"><img src="https://img.shields.io/badge/chrome.debugger-CDP-ffca28.svg" alt="chrome.debugger"></a>
+</p>
+
+<p align="center">
+  <b>Inspect every network request your browser makes — without opening DevTools.</b>
+  <br>
+  A production-grade Chrome extension built with Manifest V3 and modern Chrome APIs.
+  <br>
+  <a href="CHROMEWEBSTORE.md"><strong>Chrome Web Store listing »</strong></a>
+  ·
+  <a href="CONTRIBUTING.md"><strong>Contributing »</strong></a>
+  ·
+  <a href="SECURITY.md"><strong>Security »</strong></a>
+</p>
 
 ## Installation
 
@@ -16,8 +37,15 @@ The extension icon will appear in the toolbar. Click it to open the side panel.
 ```
 RequestIQ/
 ├── manifest.json              # Extension manifest (MV3)
+├── LICENSE                    # MIT License
+├── CHANGELOG.md               # Release history
+├── CONTRIBUTING.md            # Contribution guide
+├── SECURITY.md                # Security policy
+├── CHROMEWEBSTORE.md          # Store listing & justifications
+├── store-assets/              # Screenshots & promo tiles
 ├── images/
-│   └── icon.svg               # Application icon
+│   ├── icon.svg               # Source icon (SVG)
+│   └── icon*.png              # PNG icons for CWS (16/32/48/128)
 ├── background/
 │   └── service-worker.js      # Background service worker (ES module)
 ├── content/
@@ -92,7 +120,7 @@ In Manifest V3, `webRequest` in blocking mode is deprecated. The non-blocking `w
 | `"sidePanel"` | Enables the side panel API for the main UI. |
 | `"activeTab"` | Gets the current tab's URL and metadata for display. Revoked on tab change. |
 
-We intentionally do NOT request `"<all_urls>"`, `"webRequest"`, or `"tabs"` permissions.
+We request `"<all_urls>"` only for the content script (runs in `ISOLATED` world to inject the page-level polyfill). No host permissions are declared in the manifest's `permissions` or `host_permissions` fields. We intentionally avoid `"webRequest"` and `"tabs"`.
 
 ## Features
 
@@ -128,7 +156,7 @@ Automatically detects and highlights:
 - Most requested domain
 
 ### Export
-- JSON, CSV, and HAR (HTTP Archive) formats
+- JSON, CSV, HAR (HTTP Archive), Markdown, and Plain Text
 - One-click export from the toolbar
 
 ### Settings
