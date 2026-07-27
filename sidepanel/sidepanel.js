@@ -1,5 +1,5 @@
 import {
-  connectToBackground, sendMessage, onMessage, Channels
+  connectToBackground, sendMessage, onMessage,
 } from '../shared/messaging.js';
 import {
   getSettings, saveSettings
@@ -97,10 +97,24 @@ function clearAll() {
   updateRequestCount();
 }
 
-function togglePause() {
-  isPaused = !isPaused;
-  pauseBtn.classList.toggle('active', isPaused);
-  sendMessage(isPaused ? 'pause:capture' : 'resume:capture');
+function setPauseUI(paused) {
+  isPaused = paused;
+  pauseBtn.classList.toggle('active', paused);
+  document.getElementById('pauseIcon').classList.toggle('hidden', paused);
+  document.getElementById('playIcon').classList.toggle('hidden', !paused);
+  pauseBtn.title = paused ? 'Resume' : 'Pause';
+}
+
+async function togglePause() {
+  const next = !isPaused;
+  pauseBtn.disabled = true;
+  try {
+    await sendMessage(next ? 'pause:capture' : 'resume:capture');
+    setPauseUI(next);
+  } catch {
+    setPauseUI(isPaused);
+  }
+  pauseBtn.disabled = false;
 }
 
 function render() {
@@ -392,16 +406,9 @@ function init() {
   });
 
   onMessage('status:changed', (data) => {
-    if (data) {
-      if (data.paused !== undefined) {
-        isPaused = data.paused;
-        pauseBtn.classList.toggle('active', isPaused);
-      }
+    if (data && data.paused !== undefined) {
+      setPauseUI(data.paused);
     }
-  });
-
-  onMessage('requests:batch', (data) => {
-    if (data && data.action === 'tab_navigated') return;
   });
 
   onMessage('security:alert', (data) => {

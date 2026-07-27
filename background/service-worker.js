@@ -218,6 +218,7 @@ async function attachToAllTabs() {
 }
 
 function handleTabCreated(tab) {
+  if (isGloballyPaused) return;
   if (tab.id && !tab.url?.startsWith('chrome://') && !tab.url?.startsWith('chrome-extension://')) {
     attachToTab(tab.id);
   }
@@ -232,7 +233,7 @@ function handleTabUpdated(tabId, changeInfo) {
     for (const id of toRemove) pendingRequestsMap.delete(id);
     pushUpdate({ action: 'tab_navigated', tabId }, 'requests:batch');
   }
-  if (changeInfo.status === 'complete' && !attachedTabs.has(tabId)) {
+  if (!isGloballyPaused && changeInfo.status === 'complete' && !attachedTabs.has(tabId)) {
     attachToTab(tabId);
   }
 }
@@ -242,6 +243,7 @@ function handleTabRemoved(tabId) {
 }
 
 function handleDebuggerEvent(source, method, params) {
+  if (isGloballyPaused) return;
   const tabId = source.tabId;
   if (!attachedTabs.has(tabId)) return;
 
@@ -339,9 +341,9 @@ function processEventSource(requestId, params, tabId) {
 
 function handleDebuggerDetach(source, reason) {
   const tabId = source.tabId;
+  if (isGloballyPaused || pausedTabIds.includes(tabId)) return;
   if (attachedTabs.has(tabId)) {
     attachedTabs.delete(tabId);
-    console.log(`[RequestIQ] Detached from tab ${tabId}: ${reason}`);
     pushUpdate({ tabId, reason, status: 'detached', attachedTabs: attachedTabs.size }, 'status:changed');
     if (reason !== 'target_closed') {
       setTimeout(() => attachToTab(tabId), 1000);
@@ -386,6 +388,34 @@ function handlePortConnection(port) {
   });
 }
 
+let pausedTabIds = [];
+
+async function pauseAllTabs() {
+  pausedTabIds = [...attachedTabs.keys()];
+  for (const tabId of pausedTabIds) {
+    try {
+      await chrome.debugger.detach({ tabId });
+    } catch {}
+    attachedTabs.delete(tabId);
+  }
+}
+
+async function resumeAllTabs() {
+  const ids = [...pausedTabIds];
+  pausedTabIds = [];
+  for (const tabId of ids) {
+    try {
+      await chrome.debugger.attach({ tabId }, '1.3');
+      await chrome.debugger.sendCommand({ tabId }, 'Network.enable', {
+        maxPostDataSize: 65536,
+        maxResourceBufferSize: 65536,
+        maxTotalBufferSize: 10485760,
+      });
+      attachedTabs.set(tabId, true);
+    } catch {}
+  }
+}
+
 const messageHandlers = {
   async 'get:requests'() { return await getRequests(); },
   async 'get:stats'(data) {
@@ -401,12 +431,14 @@ const messageHandlers = {
   },
   async 'pause:capture'() {
     isGloballyPaused = true;
-    pushUpdate({ paused: true }, 'status:changed');
+    await pauseAllTabs();
+    pushUpdate({ paused: true, attachedTabs: 0 }, 'status:changed');
     return { success: true };
   },
   async 'resume:capture'() {
     isGloballyPaused = false;
-    pushUpdate({ paused: false }, 'status:changed');
+    await resumeAllTabs();
+    pushUpdate({ paused: false, attachedTabs: attachedTabs.size }, 'status:changed');
     return { success: true };
   },
   async 'get:status'() {
