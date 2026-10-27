@@ -57,6 +57,7 @@ function processRequest(requestId, data, tabId) {
       queryParams: getQueryParams(url),
       type: getTypeLabel(type),
       timestamp: getTimestamp(),
+      cdpStartTime: data.timestamp || null,
       tabId,
       frameId: data.frameId || 0,
       initiator: getInitiator(data),
@@ -98,8 +99,8 @@ function processLoadingFailed(requestId, data) {
 function processLoadingFinished(requestId, data) {
   const entry = pendingRequestsMap.get(requestId);
   if (!entry) return;
-  entry.duration = (data.timestamp || 0) > 0
-    ? (data.timestamp * 1000) - entry.timestamp : 0;
+  entry.duration = (data.timestamp || 0) > 0 && (entry.cdpStartTime || 0) > 0
+    ? Math.max(0, (data.timestamp - entry.cdpStartTime) * 1000) : 0;
   entry.size = data.encodedDataLength || entry.size || 0;
   finalizeEntry(requestId);
 }
@@ -110,6 +111,7 @@ function finalizeEntry(requestId) {
   pendingRequestsMap.delete(requestId);
 
   entry.security = runSecurityAudit(entry);
+  delete entry.cdpStartTime;
 
   completedRequests.push(entry);
   batchPushUpdates();
@@ -259,6 +261,12 @@ function handleDebuggerEvent(source, method, params) {
     case 'Network.webSocketWillSendHandshakeRequest':
       processWebSocketHandshake(params.requestId, params);
       break;
+    case 'Network.webSocketHandshakeResponseReceived':
+      processWebSocketHandshakeResponse(params.requestId, params);
+      break;
+    case 'Network.webSocketClosed':
+      finalizeEntry(params.requestId);
+      break;
     case 'Network.webSocketFrameReceived':
     case 'Network.webSocketFrameSent':
       processWebSocketFrame(params.requestId, params, method);
@@ -298,6 +306,14 @@ function processWebSocketHandshake(requestId, params) {
   if (entry && params.request?.headers) {
     entry.requestHeaders = normalizeHeaders(params.request.headers);
   }
+}
+
+function processWebSocketHandshakeResponse(requestId, params) {
+  const entry = pendingRequestsMap.get(requestId);
+  if (!entry) return;
+  entry.status = params.response?.status || entry.status || 101;
+  entry.statusText = params.response?.statusText || entry.statusText || 'Switching Protocols';
+  entry.responseHeaders = params.response?.headers ? normalizeHeaders(params.response.headers) : {};
 }
 
 function processWebSocketFrame(requestId, params, method) {
