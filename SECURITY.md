@@ -7,7 +7,7 @@ RequestIQ is a security research and debugging tool. We take security seriously.
 If you discover a vulnerability in RequestIQ itself (not in a target website's traffic that RequestIQ is inspecting), please report it privately:
 
 1. **Do not** open a public GitHub issue
-2. Email the details to: _(maintainer email)_
+2. Use GitHub's private vulnerability reporting feature if enabled for this repository. Otherwise, contact the maintainer through the public profile linked from the repository.
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
@@ -37,8 +37,8 @@ This security policy applies to the RequestIQ extension codebase only. Network t
 2. Keep the extension updated
 3. Review the permissions you grant — RequestIQ requests only `debugger`, `storage`, and `sidePanel`, with no host permissions.
 4. Start capture only for a tab you intend to inspect. Network requests can contain credentials or personal information.
-4. Use Pause mode when not actively inspecting to detach the debugger
-5. Clear captured requests via the Clear button before handing your device to someone else
+5. Use Pause mode when not actively inspecting to detach the debugger.
+6. Clear captured requests via the Clear button before handing your device to someone else.
 
 ## Safe Harbor
 
