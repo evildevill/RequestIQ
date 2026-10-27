@@ -12,6 +12,7 @@ const attachedTabs = new Map();
 const pendingRequestsMap = new Map();
 const completedRequests = [];
 const connectedPorts = new Set();
+let activeCaptureTabId = null;
 let isGloballyPaused = false;
 
 let batchTimer = null;
@@ -181,7 +182,8 @@ function runSecurityAudit(entry) {
 }
 
 async function attachToTab(tabId) {
-  if (!tabId || attachedTabs.has(tabId)) return;
+  if (!tabId) return { success: false, error: 'No active tab was found.' };
+  if (attachedTabs.get(tabId) === true) return { success: true };
   try {
     await chrome.debugger.attach({ tabId }, '1.3');
     await chrome.debugger.sendCommand({ tabId }, 'Network.enable', {
@@ -191,11 +193,13 @@ async function attachToTab(tabId) {
     });
     attachedTabs.set(tabId, true);
     console.log(`[RequestIQ] Attached to tab ${tabId}`);
-    pushUpdate({ tabId, status: 'attached', attachedTabs: attachedTabs.size }, 'status:changed');
+    pushUpdate({ tabId, status: 'attached', attachedTabs: attachedTabs.size, capturing: true, targetTabId: activeCaptureTabId }, 'status:changed');
+    return { success: true };
   } catch (err) {
-    if (err.message?.includes('Another debugger')) {
-      attachedTabs.set(tabId, false);
-    }
+    attachedTabs.delete(tabId);
+    const message = err.message || 'Chrome could not attach its debugger to this tab.';
+    pushUpdate({ tabId, status: 'error', error: message, attachedTabs: attachedTabs.size, capturing: false, targetTabId: activeCaptureTabId }, 'status:changed');
+    return { success: false, error: message };
   }
 }
 
@@ -208,24 +212,8 @@ async function detachFromTab(tabId) {
   pushUpdate({ tabId, status: 'detached', attachedTabs: attachedTabs.size }, 'status:changed');
 }
 
-async function attachToAllTabs() {
-  const tabs = await chrome.tabs.query({});
-  for (const tab of tabs) {
-    if (tab.id && !tab.url?.startsWith('chrome://') && !tab.url?.startsWith('chrome-extension://')) {
-      await attachToTab(tab.id);
-    }
-  }
-}
-
-function handleTabCreated(tab) {
-  if (isGloballyPaused) return;
-  if (tab.id && !tab.url?.startsWith('chrome://') && !tab.url?.startsWith('chrome-extension://')) {
-    attachToTab(tab.id);
-  }
-}
-
 function handleTabUpdated(tabId, changeInfo) {
-  if (changeInfo.status === 'loading' && attachedTabs.has(tabId)) {
+  if (changeInfo.status === 'loading' && attachedTabs.get(tabId) === true) {
     const toRemove = [];
     for (const [reqId, entry] of pendingRequestsMap) {
       if (entry.tabId === tabId) toRemove.push(reqId);
@@ -233,19 +221,21 @@ function handleTabUpdated(tabId, changeInfo) {
     for (const id of toRemove) pendingRequestsMap.delete(id);
     pushUpdate({ action: 'tab_navigated', tabId }, 'requests:batch');
   }
-  if (!isGloballyPaused && changeInfo.status === 'complete' && !attachedTabs.has(tabId)) {
-    attachToTab(tabId);
-  }
 }
 
 function handleTabRemoved(tabId) {
+  if (activeCaptureTabId === tabId) {
+    activeCaptureTabId = null;
+    isGloballyPaused = false;
+  }
   detachFromTab(tabId);
+  pushUpdate({ capturing: false, targetTabId: activeCaptureTabId, attachedTabs: attachedTabs.size }, 'status:changed');
 }
 
 function handleDebuggerEvent(source, method, params) {
   if (isGloballyPaused) return;
   const tabId = source.tabId;
-  if (!attachedTabs.has(tabId)) return;
+  if (attachedTabs.get(tabId) !== true || tabId !== activeCaptureTabId) return;
 
   switch (method) {
     case 'Network.requestWillBeSent':
@@ -341,14 +331,20 @@ function processEventSource(requestId, params, tabId) {
 
 function handleDebuggerDetach(source, reason) {
   const tabId = source.tabId;
-  if (isGloballyPaused || pausedTabIds.includes(tabId)) return;
-  if (attachedTabs.has(tabId)) {
-    attachedTabs.delete(tabId);
-    pushUpdate({ tabId, reason, status: 'detached', attachedTabs: attachedTabs.size }, 'status:changed');
-    if (reason !== 'target_closed') {
-      setTimeout(() => attachToTab(tabId), 1000);
-    }
+  if (!attachedTabs.has(tabId)) return;
+  attachedTabs.delete(tabId);
+  if (reason === 'target_closed' && activeCaptureTabId === tabId) {
+    activeCaptureTabId = null;
+    isGloballyPaused = false;
   }
+  pushUpdate({
+    tabId,
+    reason,
+    status: 'detached',
+    attachedTabs: attachedTabs.size,
+    capturing: false,
+    targetTabId: activeCaptureTabId,
+  }, 'status:changed');
 }
 
 function handleMessage(msg, sender, sendResponse) {
@@ -364,13 +360,15 @@ function handleMessage(msg, sender, sendResponse) {
 }
 
 function handlePortConnection(port) {
-  if (!['sidepanel', 'popup', 'content'].includes(port.name)) return;
+  if (!['sidepanel', 'popup'].includes(port.name)) return;
   connectedPorts.add(port);
   port.postMessage({
     channel: 'status:changed',
     data: {
       attachedTabs: attachedTabs.size,
       tabIds: [...attachedTabs.keys()],
+      targetTabId: activeCaptureTabId,
+      capturing: activeCaptureTabId !== null && attachedTabs.get(activeCaptureTabId) === true,
       paused: isGloballyPaused,
       requestCount: completedRequests.length + pendingRequestsMap.size,
     },
@@ -388,32 +386,20 @@ function handlePortConnection(port) {
   });
 }
 
-let pausedTabIds = [];
-
-async function pauseAllTabs() {
-  pausedTabIds = [...attachedTabs.keys()];
-  for (const tabId of pausedTabIds) {
-    try {
-      await chrome.debugger.detach({ tabId });
-    } catch {}
-    attachedTabs.delete(tabId);
-  }
+async function pauseCapture() {
+  isGloballyPaused = true;
+  if (activeCaptureTabId !== null) await detachFromTab(activeCaptureTabId);
+  pushUpdate({ paused: true, attachedTabs: 0, capturing: false, targetTabId: activeCaptureTabId }, 'status:changed');
 }
 
-async function resumeAllTabs() {
-  const ids = [...pausedTabIds];
-  pausedTabIds = [];
-  for (const tabId of ids) {
-    try {
-      await chrome.debugger.attach({ tabId }, '1.3');
-      await chrome.debugger.sendCommand({ tabId }, 'Network.enable', {
-        maxPostDataSize: 65536,
-        maxResourceBufferSize: 65536,
-        maxTotalBufferSize: 10485760,
-      });
-      attachedTabs.set(tabId, true);
-    } catch {}
+async function resumeCapture() {
+  if (activeCaptureTabId === null) {
+    return { success: false, error: 'Start capture on the active tab first.' };
   }
+  isGloballyPaused = false;
+  const result = await attachToTab(activeCaptureTabId);
+  pushUpdate({ paused: false, attachedTabs: attachedTabs.size, capturing: result.success, targetTabId: activeCaptureTabId }, 'status:changed');
+  return result;
 }
 
 const messageHandlers = {
@@ -429,22 +415,43 @@ const messageHandlers = {
     pushUpdate({ action: 'cleared' }, 'requests:batch');
     return { success: true };
   },
+  async 'start:capture'() {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return { success: false, error: 'Could not find the active tab.' };
+    if (activeCaptureTabId !== null && activeCaptureTabId !== tab.id) {
+      await detachFromTab(activeCaptureTabId);
+    }
+    activeCaptureTabId = tab.id;
+    isGloballyPaused = false;
+    const result = await attachToTab(tab.id);
+    if (!result.success) {
+      activeCaptureTabId = null;
+      return { ...result, capturing: false, targetTabId: null };
+    }
+    pushUpdate({ capturing: true, paused: false, attachedTabs: attachedTabs.size, targetTabId: activeCaptureTabId }, 'status:changed');
+    return { ...result, capturing: true, paused: false, targetTabId: activeCaptureTabId };
+  },
+  async 'stop:capture'() {
+    const tabId = activeCaptureTabId;
+    activeCaptureTabId = null;
+    isGloballyPaused = false;
+    if (tabId !== null) await detachFromTab(tabId);
+    pushUpdate({ capturing: false, paused: false, attachedTabs: attachedTabs.size, targetTabId: null }, 'status:changed');
+    return { success: true, capturing: false, targetTabId: null };
+  },
   async 'pause:capture'() {
-    isGloballyPaused = true;
-    await pauseAllTabs();
-    pushUpdate({ paused: true, attachedTabs: 0 }, 'status:changed');
-    return { success: true };
+    await pauseCapture();
+    return { success: true, paused: true };
   },
   async 'resume:capture'() {
-    isGloballyPaused = false;
-    await resumeAllTabs();
-    pushUpdate({ paused: false, attachedTabs: attachedTabs.size }, 'status:changed');
-    return { success: true };
+    return await resumeCapture();
   },
   async 'get:status'() {
     return {
       attachedTabs: attachedTabs.size,
       tabIds: [...attachedTabs.keys()],
+      targetTabId: activeCaptureTabId,
+      capturing: activeCaptureTabId !== null && attachedTabs.get(activeCaptureTabId) === true,
       paused: isGloballyPaused,
       requestCount: completedRequests.length + pendingRequestsMap.size,
     };
@@ -470,16 +477,10 @@ const messageHandlers = {
   },
 };
 
-chrome.runtime.onInstalled.addListener(async () => {
-  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  attachToAllTabs();
+chrome.runtime.onInstalled.addListener(() => {
+  // Capture starts only after an explicit Start Capture action in the popup.
 });
 
-chrome.runtime.onStartup.addListener(() => {
-  attachToAllTabs();
-});
-
-chrome.tabs.onCreated.addListener(handleTabCreated);
 chrome.tabs.onUpdated.addListener(handleTabUpdated);
 chrome.tabs.onRemoved.addListener(handleTabRemoved);
 
