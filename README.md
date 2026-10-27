@@ -92,7 +92,7 @@ Browser Tab
 | `chrome.sidePanel` | Opens the main UI in Chrome's side panel for persistent monitoring. |
 | `chrome.storage` | `storage.local` for settings persistence. `storage.session` for in-memory request cache. |
 | `chrome.runtime` | Message passing between components via `connect()` (long-lived ports) and `sendMessage()`. |
-| `chrome.tabs` | Gets active tab info and monitors tab lifecycle. |
+| `chrome.tabs` | Monitors tab lifecycle and supplies tab IDs for debugger attachment. |
 | `chrome.action` | Toolbar icon integration with `openPanelOnActionClick`. |
 
 ### Why chrome.debugger over webRequest?
@@ -115,12 +115,11 @@ In Manifest V3, `webRequest` in blocking mode is deprecated. The non-blocking `w
 
 | Permission | Why |
 |------------|-----|
-| `"debugger"` | Core permission for capturing all network traffic via CDP. No host permissions needed. |
-| `"storage"` | Persists user settings (ignored domains, max history, theme) and caches request data. |
+| `"debugger"` | Core permission for capturing network traffic via the Chrome DevTools Protocol (CDP). |
+| `"storage"` | Persists user settings and caches request data. |
 | `"sidePanel"` | Enables the side panel API for the main UI. |
-| `"activeTab"` | Gets the current tab's URL and metadata for display. Revoked on tab change. |
 
-We request `"<all_urls>"` only for the content script (runs in `ISOLATED` world to inject the page-level polyfill). No host permissions are declared in the manifest's `permissions` or `host_permissions` fields. We intentionally avoid `"webRequest"` and `"tabs"`.
+The manifest does not request `activeTab`, `tabs`, or `webRequest`. The extension uses the debugger API for network capture and tab IDs for tab lifecycle management. The `"<all_urls>"` match is used by the content script to instrument page-level APIs for additional request context; it is not listed as a permission in the manifest's `permissions` array.
 
 ## Features
 
