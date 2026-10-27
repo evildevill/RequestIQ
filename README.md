@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <b>Inspect every network request your browser makes — without opening DevTools.</b>
+  <b>Inspect network requests from the tab you choose — only when you start capture.</b>
   <br>
   A production-grade Chrome extension built with Manifest V3 and modern Chrome APIs.
   <br>
@@ -32,7 +32,7 @@
 3. Click **Load unpacked**
 4. Select the `RequestIQ/` directory
 
-The extension icon will appear in the toolbar. Click it to open the side panel.
+The extension icon will appear in the toolbar. Click it to open the popup, then click **Start Capture** to inspect the active tab or **Open Panel** to open the main interface.
 
 ## Project Structure
 
@@ -89,7 +89,7 @@ User clicks Start Capture in the popup
 | `chrome.storage` | `storage.local` for settings persistence. `storage.session` for in-memory request cache. |
 | `chrome.runtime` | Message passing between components via `connect()` (long-lived ports) and `sendMessage()`. |
 | `chrome.tabs` | Identifies the active tab only when the user clicks Start Capture; tracks that tab's navigation and closure. |
-| `chrome.action` | Toolbar icon integration with `openPanelOnActionClick`. |
+| `chrome.action` | Opens the popup with explicit Start Capture and Stop controls. |
 
 ### Why chrome.debugger over webRequest?
 
@@ -129,7 +129,8 @@ The manifest does not request `activeTab`, `tabs`, `webRequest`, or any host per
 ### Display
 - Virtual-scrolled table for 10,000+ requests without lag
 - Columns: Method, Host, Path, Status, Type, Time, Duration
-- Click-to-expand detail panel with full request/response data
+- Click-to-expand detail panel with request/response metadata
+- Copy the complete selected request record as formatted JSON
 - Security audit badges and color-coded rows
 
 ### Filtering & Search
@@ -180,7 +181,7 @@ The extension uses `chrome.runtime.connect()` for long-lived port connections be
 
 ### Manual Tests
 - [ ] Extension loads without errors
-- [ ] Side panel opens on toolbar click
+- [ ] Popup opens on toolbar click and Open Panel opens the side panel
 - [ ] Popup shows correct status
 - [ ] No debugger warning appears until Start Capture is clicked
 - [ ] Requests appear only in the tab where capture was started
