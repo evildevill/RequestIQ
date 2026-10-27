@@ -8,8 +8,7 @@
   "permissions": [
     "debugger",
     "storage",
-    "sidePanel",
-    "activeTab"
+    "sidePanel"
   ],
   "background": {
     "service_worker": "background/service-worker.js",
