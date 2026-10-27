@@ -39,6 +39,15 @@
       </div>
     </div>
 
+    <div class="capture-disclosure" role="note">
+      Capture is off until you start it. While capturing, RequestIQ can read network URLs, headers, and request bodies for the selected tab. These may contain tokens or other sensitive data. Capture data stays in this browser and is not uploaded by RequestIQ.
+    </div>
+
+    <div class="controls capture-controls">
+      <button id="startCapture" class="btn btn-primary" title="Start capturing requests from the active tab">Start Capture</button>
+      <button id="stopCapture" class="btn btn-secondary" title="Stop capturing requests" disabled>Stop</button>
+    </div>
+
     <div class="controls">
       <button id="openSidePanel" class="btn btn-primary" title="Open side panel">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 2v12" stroke="currentColor" stroke-width="1.5"/></svg>
