@@ -57,13 +57,11 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           set -e
-          find background popup shared sidepanel -type f \\( -name '*.js' -o -name '*.mjs' \\) -print0 |
+          find background popup shared sidepanel -type f \( -name '*.js' -o -name '*.mjs' \) -print0 |
             xargs -0 -r -n 1 node --check
 
       - name: Increment patch version and commit it to main
         id: version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           VERSION="$(python - <<'PY'
@@ -73,7 +71,7 @@ jobs:
           data = json.loads(p.read_text(encoding="utf-8"))
           major, minor, patch = map(int, data["version"].split("."))
           data["version"] = f"{major}.{minor}.{patch + 1}"
-          p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+          p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print(data["version"])
           PY
           )"
@@ -116,8 +114,8 @@ jobs:
           VERSION_COMMIT: ${{ steps.version.outputs.commit }}
         run: |
           set -euo pipefail
-          gh release create "$TAG" "dist/RequestIQ-${VERSION}-chrome-web-store.zip" \\
-            --repo "${GITHUB_REPOSITORY}" \\
-            --target "$VERSION_COMMIT" \\
-            --title "RequestIQ ${VERSION}" \\
+          gh release create "$TAG" "dist/RequestIQ-${VERSION}-chrome-web-store.zip" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "$VERSION_COMMIT" \
+            --title "RequestIQ ${VERSION}" \
             --generate-notes
