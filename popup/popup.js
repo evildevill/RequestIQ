@@ -1,6 +1,4 @@
-import { connectToBackground, sendMessage, onMessage, Channels } from '../shared/messaging.js';
-
-let port = null;
+import { connectToBackground, sendMessage, onMessage } from '../shared/messaging.js';
 
 function $(sel) { return document.querySelector(sel); }
 
@@ -22,6 +20,7 @@ function updateStatus(status) {
 
   $('#startCapture').disabled = Boolean(status.capturing);
   $('#stopCapture').disabled = !status.capturing && !status.paused;
+  $('#activeRequests').textContent = status.requestCount || 0;
 }
 
 function updateStats(stats) {
@@ -38,11 +37,17 @@ async function refresh() {
   if (stats) updateStats(stats);
 }
 
-async function openSidePanel() {
+async function openSidePanel(openSettings = false) {
   if (chrome.sidePanel) {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab?.id) await chrome.sidePanel.open({ tabId: tab.id });
+      if (tab?.id) {
+        await chrome.sidePanel.open({ tabId: tab.id });
+        if (openSettings) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          await sendMessage('panel:open-settings');
+        }
+      }
     } catch (error) {
       $('#statusText').textContent = error.message || 'Could not open the side panel';
       return;
@@ -52,7 +57,7 @@ async function openSidePanel() {
 }
 
 $('#openSidePanel').addEventListener('click', openSidePanel);
-$('#settingsBtn').addEventListener('click', openSidePanel);
+$('#settingsBtn').addEventListener('click', () => openSidePanel(true));
 
 $('#startCapture').addEventListener('click', async () => {
   const button = $('#startCapture');
@@ -92,7 +97,7 @@ $('#clearBtn').addEventListener('click', async () => {
 
 function init() {
   document.getElementById('popupLogo').src = chrome.runtime.getURL('images/icon32.png');
-  port = connectToBackground('popup');
+  connectToBackground('popup');
 
   onMessage('status:changed', (data) => {
     if (data) updateStatus(data);
