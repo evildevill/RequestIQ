@@ -447,6 +447,10 @@ function init() {
     }
   });
 
+  onMessage('panel:open-settings', () => {
+    settingsPanel.classList.remove('hidden');
+  });
+
   onMessage('security:alert', (data) => {
     if (data && data.entry) {
       insertRequests([data.entry]);
