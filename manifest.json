@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RequestIQ – Network & API Inspector",
   "short_name": "RequestIQ",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Inspect network requests on the selected tab only when you explicitly start capture.",
   "minimum_chrome_version": "116",
   "permissions": [
