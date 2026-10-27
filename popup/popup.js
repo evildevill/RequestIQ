@@ -59,19 +59,19 @@ $('#startCapture').addEventListener('click', async () => {
   button.disabled = true;
   const originalText = button.textContent;
   button.textContent = 'Starting…';
+  let errorMessage = '';
   try {
     const result = await sendMessage('start:capture');
-    if (!result?.success) {
-      $('#statusText').textContent = result?.error || 'Could not start capture';
-      $('#statusIndicator').className = 'status-indicator detached';
-    }
-    await refresh();
+    if (!result?.success) errorMessage = result?.error || 'Could not start capture';
   } catch (error) {
-    $('#statusText').textContent = error.message || 'Could not start capture';
-    $('#statusIndicator').className = 'status-indicator detached';
+    errorMessage = error.message || 'Could not start capture';
   } finally {
     button.textContent = originalText;
     await refresh();
+    if (errorMessage) {
+      $('#statusText').textContent = errorMessage;
+      $('#statusIndicator').className = 'status-indicator detached';
+    }
   }
 });
 
