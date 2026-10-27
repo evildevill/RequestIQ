@@ -35,7 +35,7 @@ This security policy applies to the RequestIQ extension codebase only. Network t
 
 1. Only install RequestIQ from the Chrome Web Store
 2. Keep the extension updated
-3. Review the permissions you grant — RequestIQ only needs `debugger`, `storage`, `sidePanel`, and `activeTab`
+3. Review the permissions you grant — RequestIQ requests only `debugger`, `storage`, and `sidePanel`.
 4. Use Pause mode when not actively inspecting to detach the debugger
 5. Clear captured requests via the Clear button before handing your device to someone else
 
