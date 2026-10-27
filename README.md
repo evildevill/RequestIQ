@@ -5,8 +5,8 @@
   <a href="#"><img src="https://img.shields.io/badge/version-1.0.1-8b5cf6.svg" alt="Version 1.0.1"></a>
   <a href="#"><img src="https://img.shields.io/badge/Manifest-V3-ff6b6b.svg" alt="Manifest V3"></a>
   <a href="#"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Chrome-102%2B-4285F4.svg" alt="Chrome 102+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Edge-102%2B-0078D7.svg" alt="Edge 102+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Chrome-116%2B-4285F4.svg" alt="Chrome 116+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Edge-116%2B-0078D7.svg" alt="Edge 116+"></a>
   <a href="#"><img src="https://img.shields.io/badge/Brave-supported-f5426c.svg" alt="Brave"></a>
   <a href="#"><img src="https://img.shields.io/badge/chrome.debugger-CDP-ffca28.svg" alt="chrome.debugger"></a>
 </p>
