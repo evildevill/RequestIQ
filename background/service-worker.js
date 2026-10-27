@@ -4,7 +4,7 @@ import {
   detectCloudProvider, detectAIProvider, hasAuthHeader, getTypeLabel,
 } from '../shared/utils.js';
 import {
-  getSettings, saveSettings, getRequests, saveRequests,
+  getSettings, saveSettings, getRequests,
   appendRequests, clearRequests,
 } from '../shared/storage.js';
 
@@ -346,6 +346,7 @@ function processEventSource(requestId, params, tabId) {
       status: 200, duration: 0, size: 0, initiator: 'page',
       security: null, cached: false,
     };
+    pendingRequestsMap.set(requestId, entry);
     finalizeEntry(requestId);
   });
 }
