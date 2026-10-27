@@ -51,3 +51,6 @@ This policy will be updated if RequestIQ's data practices change. The effective 
 ## Contact
 
 For privacy questions or requests, open an issue in the [RequestIQ GitHub repository](https://github.com/evildevill/RequestIQ/issues).
+
+
+RequestIQ's use and transfer of information received through Chrome APIs complies with the Chrome Web Store User Data Policy, including the Limited Use requirements.
