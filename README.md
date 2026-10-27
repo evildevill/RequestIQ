@@ -18,6 +18,8 @@
   <br>
   <a href="CHROMEWEBSTORE.md"><strong>Chrome Web Store listing »</strong></a>
   ·
+  <a href="PRIVACY.md"><strong>Privacy »</strong></a>
+  ·
   <a href="CONTRIBUTING.md"><strong>Contributing »</strong></a>
   ·
   <a href="SECURITY.md"><strong>Security »</strong></a>
@@ -196,7 +198,7 @@ The extension uses `chrome.runtime.connect()` for long-lived port connections be
 - [ ] New tabs are not attached automatically
 - [ ] DevTools open (graceful handling)
 - [ ] 10,000+ requests (no lag)
-- [ ] Chrome Web Store pages (content script restrictions)
+- [ ] Restricted pages (Chrome Web Store, chrome://, and extension pages) reject capture gracefully
 - [ ] chrome:// URLs (no debugger access)
 - [ ] Extension update (state preservation)
 
