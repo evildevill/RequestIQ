@@ -477,6 +477,10 @@ const messageHandlers = {
       requestCount: completedRequests.length + pendingRequestsMap.size,
     };
   },
+  async 'panel:open-settings'() {
+    pushUpdate({ action: 'open-settings' }, 'panel:open-settings');
+    return { success: true };
+  },
   async 'settings:updated'(data) { return await saveSettings(data.settings); },
   async 'get:settings'() { return await getSettings(); },
   async 'export:requests'(data) {
