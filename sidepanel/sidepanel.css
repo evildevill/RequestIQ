@@ -585,3 +585,18 @@ input, select, button { font-family: inherit; font-size: inherit; }
     --danger: #cf222e;
   }
 }
+
+
+.copy-detail-btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.copy-detail-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-detail-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.copy-status { color: var(--success); font-size: 10px; min-width: 40px; }
