@@ -186,8 +186,10 @@ function runSecurityAudit(entry) {
 async function attachToTab(tabId) {
   if (!tabId) return { success: false, error: 'No active tab was found.' };
   if (attachedTabs.get(tabId) === true) return { success: true };
+  let didAttach = false;
   try {
     await chrome.debugger.attach({ tabId }, '1.3');
+    didAttach = true;
     await chrome.debugger.sendCommand({ tabId }, 'Network.enable', {
       maxPostDataSize: 65536,
       maxResourceBufferSize: 65536,
@@ -199,6 +201,9 @@ async function attachToTab(tabId) {
     return { success: true };
   } catch (err) {
     attachedTabs.delete(tabId);
+    if (didAttach) {
+      try { await chrome.debugger.detach({ tabId }); } catch {}
+    }
     const message = err.message || 'Chrome could not attach its debugger to this tab.';
     pushUpdate({ tabId, status: 'error', error: message, attachedTabs: attachedTabs.size, capturing: false, targetTabId: activeCaptureTabId }, 'status:changed');
     return { success: false, error: message };
@@ -492,10 +497,6 @@ const messageHandlers = {
     });
   },
 };
-
-chrome.runtime.onInstalled.addListener(() => {
-  // Capture starts only after an explicit Start Capture action in the popup.
-});
 
 chrome.tabs.onUpdated.addListener(handleTabUpdated);
 chrome.tabs.onRemoved.addListener(handleTabRemoved);
