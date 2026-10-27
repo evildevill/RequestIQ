@@ -17,6 +17,8 @@ let allRequests = [];
 let filteredRequests = [];
 let expandedId = null;
 let isPaused = false;
+let isCapturing = false;
+let currentDetailRequest = null;
 let showAlertsOnly = false;
 let scrollTop = 0;
 let containerHeight = 0;
@@ -134,12 +136,12 @@ function render() {
     const isExpanded = r.id === expandedId;
 
     html += `<div class="request-row${hasAlerts ? ' has-alerts' : ''}${isExpanded ? ' selected' : ''}"
-                  style="top:${top}px" data-id="${r.id}">
-      <span class="col-method" style="color:${mColor}">${r.method || '?'}</span>
-      <span class="col-host" title="${r.hostname || ''}">${r.hostname || ''}</span>
-      <span class="col-path" title="${r.url || ''}">${(r.path || r.url || '').slice(0, 80)}</span>
-      <span class="col-status" style="color:${sColor}">${r.status || '-'}</span>
-      <span class="col-type">${r.type || ''}</span>
+                  style="top:${top}px" data-id="${escapeHtml(String(r.id))}">
+      <span class="col-method" style="color:${mColor}">${escapeHtml(r.method || '?')}</span>
+      <span class="col-host" title="${escapeHtml(r.hostname || '')}">${escapeHtml(r.hostname || '')}</span>
+      <span class="col-path" title="${escapeHtml(r.url || '')}">${escapeHtml((r.path || r.url || '').slice(0, 80))}</span>
+      <span class="col-status" style="color:${sColor}">${escapeHtml(String(r.status || '-'))}</span>
+      <span class="col-type">${escapeHtml(r.type || '')}</span>
       <span class="col-time">${r.timestamp ? formatTime(r.timestamp) : ''}</span>
       <span class="col-duration">${r.duration > 0 ? (r.duration.toFixed(0) + 'ms') : ''}</span>
       <span class="col-alerts">${hasAlerts ? '<span class="alert-dot"></span>' : ''}</span>
@@ -175,6 +177,7 @@ function updateStats() {
 
 function showDetails(request) {
   if (!request) return;
+  currentDetailRequest = request;
   expandedId = request.id;
   detailPanel.classList.remove('hidden');
 
@@ -182,9 +185,10 @@ function showDetails(request) {
   if (request.security && request.security.length) {
     alertsHtml = '<div class="security-alerts-section">';
     for (const alert of request.security) {
-      alertsHtml += `<div class="security-alert severity-${alert.severity}">
-        <span class="security-alert-type">${alert.type.replace(/_/g, ' ')}</span>
-        <span class="security-alert-detail">${escapeHtml(alert.detail)}</span>
+      const severity = ['high', 'medium', 'low', 'info'].includes(alert.severity) ? alert.severity : 'info';
+      alertsHtml += `<div class="security-alert severity-${severity}">
+        <span class="security-alert-type">${escapeHtml(String(alert.type || 'alert').replace(/_/g, ' '))}</span>
+        <span class="security-alert-detail">${escapeHtml(alert.detail || '')}</span>
       </div>`;
     }
     alertsHtml += '</div>';
@@ -229,19 +233,19 @@ function showDetails(request) {
     <div class="detail-section">
       <div class="detail-section-title">General</div>
       <div class="detail-row"><span class="detail-key">URL</span><span class="detail-value url">${escapeHtml(request.url)}</span></div>
-      <div class="detail-row"><span class="detail-key">Method</span><span class="detail-value" style="color:${methodColor(request.method)}">${request.method}</span></div>
-      <div class="detail-row"><span class="detail-key">Status</span><span class="detail-value" style="color:${statusColor(request.status)}">${request.status} ${request.statusText || ''}</span></div>
-      <div class="detail-row"><span class="detail-key">Type</span><span class="detail-value">${request.type}</span></div>
+      <div class="detail-row"><span class="detail-key">Method</span><span class="detail-value" style="color:${methodColor(request.method)}">${escapeHtml(request.method || '-')}</span></div>
+      <div class="detail-row"><span class="detail-key">Status</span><span class="detail-value" style="color:${statusColor(request.status)}">${escapeHtml(String(request.status ?? '-'))} ${escapeHtml(request.statusText || '')}</span></div>
+      <div class="detail-row"><span class="detail-key">Type</span><span class="detail-value">${escapeHtml(request.type || '-')}</span></div>
       <div class="detail-row"><span class="detail-key">Hostname</span><span class="detail-value">${escapeHtml(request.hostname)}</span></div>
       <div class="detail-row"><span class="detail-key">Path</span><span class="detail-value">${escapeHtml(request.path)}</span></div>
       <div class="detail-row"><span class="detail-key">Origin</span><span class="detail-value">${escapeHtml(request.origin || '')}</span></div>
-      <div class="detail-row"><span class="detail-key">Timestamp</span><span class="detail-value">${new Date(request.timestamp).toISOString()}</span></div>
+      <div class="detail-row"><span class="detail-key">Timestamp</span><span class="detail-value">${escapeHtml(Number.isFinite(Number(request.timestamp)) ? new Date(Number(request.timestamp)).toISOString() : '-')}</span></div>
       <div class="detail-row"><span class="detail-key">Duration</span><span class="detail-value">${request.duration > 0 ? request.duration.toFixed(1) + 'ms' : '-'}</span></div>
       <div class="detail-row"><span class="detail-key">Size</span><span class="detail-value">${request.size > 0 ? formatBytes(request.size) : '-'}</span></div>
       <div class="detail-row"><span class="detail-key">Initiator</span><span class="detail-value">${escapeHtml(request.initiator || '-')}</span></div>
       <div class="detail-row"><span class="detail-key">Frame ID</span><span class="detail-value">${request.frameId ?? '-'}</span></div>
       <div class="detail-row"><span class="detail-key">Cached</span><span class="detail-value">${request.cached ? 'Yes' : 'No'}</span></div>
-      <div class="detail-row"><span class="detail-key">HTTP Version</span><span class="detail-value">${request.httpVersion || '-'}</span></div>
+      <div class="detail-row"><span class="detail-key">HTTP Version</span><span class="detail-value">${escapeHtml(request.httpVersion || '-')}</span></div>
     </div>
     ${paramsHtml}
     ${headersHtml}
@@ -251,10 +255,37 @@ function showDetails(request) {
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
+  if (str === null || str === undefined) return '';
   const d = document.createElement('div');
-  d.textContent = str;
+  d.textContent = String(str);
   return d.innerHTML;
+}
+
+async function copyRequestDetails() {
+  if (!currentDetailRequest) return;
+  const button = $('#detailCopy');
+  const status = $('#copyStatus');
+  const text = JSON.stringify(currentDetailRequest, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    status.textContent = 'Copied';
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    status.textContent = copied ? 'Copied' : 'Copy failed';
+  }
+  button.textContent = status.textContent === 'Copied' ? 'Copied!' : 'Retry Copy';
+  setTimeout(() => {
+    if (button.isConnected) button.textContent = 'Copy All';
+    if (status.isConnected) status.textContent = '';
+  }, 1800);
 }
 
 function handleRowClick(e) {
@@ -371,6 +402,7 @@ securityFilterBtn.addEventListener('click', () => {
 });
 
 pauseBtn.addEventListener('click', togglePause);
+$('#detailCopy').addEventListener('click', copyRequestDetails);
 clearBtn.addEventListener('click', clearAll);
 exportBtn.addEventListener('click', handleExport);
 
@@ -406,8 +438,12 @@ function init() {
   });
 
   onMessage('status:changed', (data) => {
-    if (data && data.paused !== undefined) {
-      setPauseUI(data.paused);
+    if (!data) return;
+    if (data.paused !== undefined) setPauseUI(data.paused);
+    if (data.capturing !== undefined || data.targetTabId !== undefined) {
+      isCapturing = Boolean(data.capturing);
+      pauseBtn.disabled = !isCapturing && !Boolean(data.paused);
+      pauseBtn.title = data.paused ? 'Resume capture' : 'Pause capture';
     }
   });
 
