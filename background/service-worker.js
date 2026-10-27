@@ -14,6 +14,7 @@ const completedRequests = [];
 const connectedPorts = new Set();
 let activeCaptureTabId = null;
 let isGloballyPaused = false;
+let openSettingsWhenPanelConnects = false;
 
 let batchTimer = null;
 const BATCH_INTERVAL = 150;
@@ -395,6 +396,10 @@ function handlePortConnection(port) {
       requestCount: completedRequests.length + pendingRequestsMap.size,
     },
   });
+  if (port.name === 'sidepanel' && openSettingsWhenPanelConnects) {
+    openSettingsWhenPanelConnects = false;
+    setTimeout(() => pushUpdate({ action: 'open-settings' }, 'panel:open-settings'), 0);
+  }
   port.onDisconnect.addListener(() => { connectedPorts.delete(port); });
   port.onMessage.addListener((msg) => {
     const handler = messageHandlers[msg.channel];
@@ -479,7 +484,11 @@ const messageHandlers = {
     };
   },
   async 'panel:open-settings'() {
-    pushUpdate({ action: 'open-settings' }, 'panel:open-settings');
+    if ([...connectedPorts].some(port => port.name === 'sidepanel')) {
+      pushUpdate({ action: 'open-settings' }, 'panel:open-settings');
+    } else {
+      openSettingsWhenPanelConnects = true;
+    }
     return { success: true };
   },
   async 'settings:updated'(data) { return await saveSettings(data.settings); },
