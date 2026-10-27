@@ -141,7 +141,7 @@
       <div id="emptyState" class="empty-state hidden">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h36v28H6z"/><path d="M14 12V8h20v4"/><path d="M16 22h16M16 28h12M16 34h8"/></svg>
         <p>No requests captured yet</p>
-        <span>Visit a webpage to start monitoring</span>
+        <span>Open the extension popup and click Start Capture</span>
       </div>
     </div>
 
@@ -151,6 +151,8 @@
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2l10 10M12 2L2 12"/></svg>
         </button>
         <span class="detail-title">Request Details</span>
+        <button id="detailCopy" class="copy-detail-btn" type="button" title="Copy complete request details">Copy All</button>
+        <span id="copyStatus" class="copy-status" aria-live="polite"></span>
       </div>
       <div class="detail-content" id="detailContent"></div>
     </div>

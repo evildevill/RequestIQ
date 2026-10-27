@@ -1,6 +1,4 @@
-import { connectToBackground, sendMessage, onMessage, Channels } from '../shared/messaging.js';
-
-let port = null;
+import { connectToBackground, sendMessage, onMessage } from '../shared/messaging.js';
 
 function $(sel) { return document.querySelector(sel); }
 
@@ -11,14 +9,18 @@ function updateStatus(status) {
 
   if (status.paused) {
     indicator.classList.add('paused');
-    text.textContent = 'Paused';
-  } else if (status.attachedTabs > 0) {
+    text.textContent = 'Capture paused';
+  } else if (status.capturing || status.attachedTabs > 0) {
     indicator.classList.add('attached');
-    text.textContent = `Monitoring ${status.attachedTabs} tab${status.attachedTabs > 1 ? 's' : ''}`;
+    text.textContent = 'Capturing this tab';
   } else {
     indicator.classList.add('detached');
-    text.textContent = status.error || 'Waiting for tabs...';
+    text.textContent = status.error || 'Capture is off';
   }
+
+  $('#startCapture').disabled = Boolean(status.capturing);
+  $('#stopCapture').disabled = !status.capturing && !status.paused;
+  $('#activeRequests').textContent = status.requestCount || 0;
 }
 
 function updateStats(stats) {
@@ -35,15 +37,57 @@ async function refresh() {
   if (stats) updateStats(stats);
 }
 
-$('#openSidePanel').addEventListener('click', async () => {
+async function openSidePanel(openSettings = false) {
   if (chrome.sidePanel) {
     try {
-      await chrome.sidePanel.open({ windowId: (await chrome.windows.getCurrent()).id });
-    } catch {
-      chrome.runtime.openOptionsPage?.();
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        await chrome.sidePanel.open({ tabId: tab.id });
+        if (openSettings) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          await sendMessage('panel:open-settings');
+        }
+      }
+    } catch (error) {
+      $('#statusText').textContent = error.message || 'Could not open the side panel';
+      return;
     }
   }
   window.close();
+}
+
+$('#openSidePanel').addEventListener('click', openSidePanel);
+$('#settingsBtn').addEventListener('click', () => openSidePanel(true));
+
+$('#startCapture').addEventListener('click', async () => {
+  const button = $('#startCapture');
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = 'Starting…';
+  let errorMessage = '';
+  try {
+    const result = await sendMessage('start:capture');
+    if (!result?.success) errorMessage = result?.error || 'Could not start capture';
+  } catch (error) {
+    errorMessage = error.message || 'Could not start capture';
+  } finally {
+    button.textContent = originalText;
+    await refresh();
+    if (errorMessage) {
+      $('#statusText').textContent = errorMessage;
+      $('#statusIndicator').className = 'status-indicator detached';
+    }
+  }
+});
+
+$('#stopCapture').addEventListener('click', async () => {
+  $('#stopCapture').disabled = true;
+  try {
+    await sendMessage('stop:capture');
+    await refresh();
+  } catch (error) {
+    $('#statusText').textContent = error.message || 'Could not stop capture';
+  }
 });
 
 $('#clearBtn').addEventListener('click', async () => {
@@ -53,7 +97,7 @@ $('#clearBtn').addEventListener('click', async () => {
 
 function init() {
   document.getElementById('popupLogo').src = chrome.runtime.getURL('images/icon32.png');
-  port = connectToBackground('popup');
+  connectToBackground('popup');
 
   onMessage('status:changed', (data) => {
     if (data) updateStatus(data);

@@ -2,21 +2,23 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-1.0.0-8b5cf6.svg" alt="Version 1.0.0"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.0.1-8b5cf6.svg" alt="Version 1.0.1"></a>
   <a href="#"><img src="https://img.shields.io/badge/Manifest-V3-ff6b6b.svg" alt="Manifest V3"></a>
   <a href="#"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Chrome-102%2B-4285F4.svg" alt="Chrome 102+"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Edge-102%2B-0078D7.svg" alt="Edge 102+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Chrome-116%2B-4285F4.svg" alt="Chrome 116+"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Edge-116%2B-0078D7.svg" alt="Edge 116+"></a>
   <a href="#"><img src="https://img.shields.io/badge/Brave-supported-f5426c.svg" alt="Brave"></a>
   <a href="#"><img src="https://img.shields.io/badge/chrome.debugger-CDP-ffca28.svg" alt="chrome.debugger"></a>
 </p>
 
 <p align="center">
-  <b>Inspect every network request your browser makes — without opening DevTools.</b>
+  <b>Inspect network requests from the tab you choose — only when you start capture.</b>
   <br>
   A production-grade Chrome extension built with Manifest V3 and modern Chrome APIs.
   <br>
   <a href="CHROMEWEBSTORE.md"><strong>Chrome Web Store listing »</strong></a>
+  ·
+  <a href="PRIVACY.md"><strong>Privacy »</strong></a>
   ·
   <a href="CONTRIBUTING.md"><strong>Contributing »</strong></a>
   ·
@@ -30,7 +32,7 @@
 3. Click **Load unpacked**
 4. Select the `RequestIQ/` directory
 
-The extension icon will appear in the toolbar. Click it to open the side panel.
+The extension icon will appear in the toolbar. Click it to open the popup, then click **Start Capture** to inspect the active tab or **Open Panel** to open the main interface.
 
 ## Project Structure
 
@@ -41,16 +43,14 @@ RequestIQ/
 ├── CHANGELOG.md               # Release history
 ├── CONTRIBUTING.md            # Contribution guide
 ├── SECURITY.md                # Security policy
-├── CHROMEWEBSTORE.md          # Store listing & justifications
+├── CHROMEWEBSTORE.md          # Store listing & permission justifications
+├── PRIVACY.md                 # Data handling and privacy policy
 ├── store-assets/              # Screenshots & promo tiles
 ├── images/
 │   ├── icon.svg               # Source icon (SVG)
 │   └── icon*.png              # PNG icons for CWS (16/32/48/128)
 ├── background/
 │   └── service-worker.js      # Background service worker (ES module)
-├── content/
-│   ├── content.js             # Content script (isolated world)
-│   └── injected.js            # Injected script (page context)
 ├── popup/
 │   ├── popup.html             # Popup UI
 │   ├── popup.css              # Popup styles
@@ -70,18 +70,14 @@ RequestIQ/
 ### Data Flow
 
 ```
-Browser Tab
+User clicks Start Capture in the popup
     │
-    ├── chrome.debugger API (CDP) ──→ Service Worker ──→ chrome.storage.session
-    │                                   │
-    │                                   ├── Real-time updates via Port
-    │                                   │       │
-    │                                   │       ├── Side Panel (main UI)
-    │                                   │       └── Popup (quick status)
-    │                                   │
-    │                                   └── On-request queries
-    │
-    └── Injected Script (fallback) ──→ Content Script ──→ Service Worker
+    └── Active Tab ── chrome.debugger API (CDP) ──→ Service Worker
+                                                     │
+                                                     ├── chrome.storage.session
+                                                     └── Real-time updates via Port
+                                                           ├── Side Panel
+                                                           └── Popup
 ```
 
 ### Chrome APIs Used
@@ -92,8 +88,8 @@ Browser Tab
 | `chrome.sidePanel` | Opens the main UI in Chrome's side panel for persistent monitoring. |
 | `chrome.storage` | `storage.local` for settings persistence. `storage.session` for in-memory request cache. |
 | `chrome.runtime` | Message passing between components via `connect()` (long-lived ports) and `sendMessage()`. |
-| `chrome.tabs` | Gets active tab info and monitors tab lifecycle. |
-| `chrome.action` | Toolbar icon integration with `openPanelOnActionClick`. |
+| `chrome.tabs` | Identifies the active tab only when the user clicks Start Capture; tracks that tab's navigation and closure. |
+| `chrome.action` | Opens the popup with explicit Start Capture and Stop controls. |
 
 ### Why chrome.debugger over webRequest?
 
@@ -108,31 +104,33 @@ In Manifest V3, `webRequest` in blocking mode is deprecated. The non-blocking `w
 
 - **DevTools conflict**: Chrome DevTools also uses the debugger. Opening DevTools while the extension is attached will detach the extension's debugger. The extension automatically re-attaches when DevTools closes.
 - **Service worker lifecycle**: MV3 service workers can be terminated after ~30s of inactivity. Debugger events keep the worker alive during capture.
-- **Debugger notification**: Chrome shows "Extension X started debugging this browser" when the debugger attaches.
-- **Tab navigation**: Debugger detaches on navigation; the extension auto-re-attaches.
+- **Debugger notification**: Chrome shows "RequestIQ started debugging this browser" while capture is active. Chrome controls this warning; RequestIQ cannot hide it.
+- **Explicit capture**: No capture starts on installation or browser startup. Click the extension icon, then **Start Capture** to attach to the currently active tab. Click **Stop** to detach.
+- **Single-tab scope**: RequestIQ does not attach to newly opened tabs or other existing tabs. To inspect another tab, stop capture, select that tab, and start capture again.
+- **DevTools conflict**: If Chrome detaches RequestIQ because DevTools takes over, capture stops; start it again explicitly if needed.
 
 ## Permissions
 
 | Permission | Why |
 |------------|-----|
-| `"debugger"` | Core permission for capturing all network traffic via CDP. No host permissions needed. |
-| `"storage"` | Persists user settings (ignored domains, max history, theme) and caches request data. |
+| `"debugger"` | Core permission for capturing network traffic via the Chrome DevTools Protocol (CDP). |
+| `"storage"` | Persists user settings and caches request data. |
 | `"sidePanel"` | Enables the side panel API for the main UI. |
-| `"activeTab"` | Gets the current tab's URL and metadata for display. Revoked on tab change. |
 
-We request `"<all_urls>"` only for the content script (runs in `ISOLATED` world to inject the page-level polyfill). No host permissions are declared in the manifest's `permissions` or `host_permissions` fields. We intentionally avoid `"webRequest"` and `"tabs"`.
+The manifest does not request `activeTab`, `tabs`, `webRequest`, or any host permissions. RequestIQ uses the active tab ID only after the user clicks **Start Capture**, then attaches the debugger to that tab. It does not inject scripts into websites or monitor tabs in the background.
 
 ## Features
 
 ### Capture
 - Every request type: `fetch()`, `XMLHttpRequest`, WebSocket, EventSource, `navigator.sendBeacon()`, images, scripts, stylesheets, fonts, documents, media, and more
 - Uses Chrome DevTools Protocol (`Network.enable`) for comprehensive capture
-- Falls back to JavaScript instrumentation for additional context
+- Uses browser-level CDP events; no page script injection is required
 
 ### Display
 - Virtual-scrolled table for 10,000+ requests without lag
 - Columns: Method, Host, Path, Status, Type, Time, Duration
-- Click-to-expand detail panel with full request/response data
+- Click-to-expand detail panel with request/response metadata
+- Copy the complete selected request record as formatted JSON
 - Security audit badges and color-coded rows
 
 ### Filtering & Search
@@ -183,9 +181,10 @@ The extension uses `chrome.runtime.connect()` for long-lived port connections be
 
 ### Manual Tests
 - [ ] Extension loads without errors
-- [ ] Side panel opens on toolbar click
+- [ ] Popup opens on toolbar click and Open Panel opens the side panel
 - [ ] Popup shows correct status
-- [ ] Requests appear when browsing
+- [ ] No debugger warning appears until Start Capture is clicked
+- [ ] Requests appear only in the tab where capture was started
 - [ ] All request types are captured
 - [ ] Filtering works (by method, type, status, text search)
 - [ ] Security alerts appear for auth headers
@@ -196,10 +195,11 @@ The extension uses `chrome.runtime.connect()` for long-lived port connections be
 - [ ] Settings persist across browser restart
 
 ### Edge Cases
-- [ ] Tab navigation (debugger re-attaches)
+- [ ] Tab navigation remains scoped to the selected capture tab
+- [ ] New tabs are not attached automatically
 - [ ] DevTools open (graceful handling)
 - [ ] 10,000+ requests (no lag)
-- [ ] Chrome Web Store pages (content script restrictions)
+- [ ] Restricted pages (Chrome Web Store, chrome://, and extension pages) reject capture gracefully
 - [ ] chrome:// URLs (no debugger access)
 - [ ] Extension update (state preservation)
 
@@ -212,10 +212,10 @@ The extension uses `chrome.runtime.connect()` for long-lived port connections be
 
 ## Known Limitations
 
-1. **Cannot inspect Chrome Web Store or chrome:// pages**: Chrome restricts debugger access on these pages
-2. **DevTools conflict**: Only one debugger can be attached at a time
-3. **Service worker wake-up**: After ~30s of inactivity, the service worker may terminate; it restarts on the next tab event
-4. **WebSocket payloads**: The debugger reports WebSocket frames but doesn't capture full payload history due to memory constraints
+1. **Restricted pages**: Chrome restricts debugger access on browser-internal pages and the Chrome Web Store.
+2. **DevTools conflict**: Only one debugger can be attached at a time; if Chrome detaches RequestIQ, start capture again.
+3. **Service worker lifecycle**: The Manifest V3 worker may stop while idle. Capture is user-started and is not automatically re-enabled after a worker restart.
+4. **WebSocket payloads**: The debugger reports WebSocket frames but RequestIQ does not store complete frame payload history.
 
 ## Future Improvements
 

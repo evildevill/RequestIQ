@@ -149,3 +149,18 @@ header {
   margin-top: 8px;
   letter-spacing: 0.3px;
 }
+
+
+.capture-disclosure {
+  padding: 9px 10px;
+  margin: 0 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.capture-controls { margin-bottom: 10px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
